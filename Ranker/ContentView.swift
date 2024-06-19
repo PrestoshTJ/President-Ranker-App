@@ -8,8 +8,8 @@
 import SwiftUI
 
 
-struct President: Identifiable {
-    let id = UUID()
+struct President: Codable, Identifiable {
+    var id = UUID()
     let name: String
     var eloScore: Int
 }
@@ -71,6 +71,15 @@ struct ContentView: View {
     ]
     
     func randPres() {
+        if buttonMessage == "Start" {
+            if let savedData = UserDefaults.standard.data(forKey: "presidentsArray") {
+                let decoder = JSONDecoder()
+                if let loadedPresidents = try? decoder.decode([President].self, from: savedData) {
+                    presidents = loadedPresidents
+                }
+            }
+
+        }
         buttonMessage = "Refresh"
         numOne = Int.random(in:0..<presidents.count)
         numTwo = Int.random(in:0..<presidents.count)
@@ -89,6 +98,10 @@ struct ContentView: View {
         let loseProbability = 1 / (1 + pow(10, Double(win - lose) / 400))
         presidents[winIndex].eloScore = win + Int(K * (1 - winProbability))
         presidents[loseIndex].eloScore = lose + Int(K * (0 - loseProbability))
+        let encoder = JSONEncoder()
+        if let encoded = try? encoder.encode(presidents) {
+            UserDefaults.standard.set(encoded, forKey: "presidentsArray")
+        }
     }
     
     func sort () {
@@ -136,7 +149,7 @@ struct ContentView: View {
                     
                     Button(action: {
                         sort()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                             showTopFive = true
                         }
                     }) {
@@ -170,7 +183,7 @@ struct ContentView: View {
                     .background(RoundedRectangle(cornerRadius: 10).fill(.green))
                 }
             }
-            .padding(/*@START_MENU_TOKEN@*/.all, 5.0/*@END_MENU_TOKEN@*/)
+            .padding(.all, 5.0)
         }
     }
 }
