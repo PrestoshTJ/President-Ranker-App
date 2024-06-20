@@ -1,12 +1,4 @@
-//
-//  ContentView.swift
-//  Ranker
-//
-//  Created by TJ Prestosh on 6/18/24.
-//
-
 import SwiftUI
-
 
 struct President: Codable, Identifiable {
     var id = UUID()
@@ -67,53 +59,7 @@ struct ContentView: View {
         President(name: "Barack Obama", eloScore: 1000),
         President(name: "Donald Trump", eloScore: 1000),
         President(name: "Joe Biden", eloScore: 1000)
-
     ]
-    
-    func randPres() {
-        if buttonMessage == "Start" {
-            if let savedData = UserDefaults.standard.data(forKey: "presidentsArray") {
-                let decoder = JSONDecoder()
-                if let loadedPresidents = try? decoder.decode([President].self, from: savedData) {
-                    presidents = loadedPresidents
-                }
-            }
-
-        }
-        buttonMessage = "Refresh"
-        numOne = Int.random(in:0..<presidents.count)
-        numTwo = Int.random(in:0..<presidents.count)
-        while numTwo == numOne {
-            numTwo = Int.random(in:0..<presidents.count)
-        }
-        presOne = presidents[numOne].name
-        presTwo = presidents[numTwo].name
-        
-        
-    }
-    
-    func ELO(win: Int, lose: Int, winIndex: Int, loseIndex: Int) {
-        let K: Double = 30
-        let winProbability = 1 / (1 + pow(10, Double(lose - win) / 400))
-        let loseProbability = 1 / (1 + pow(10, Double(win - lose) / 400))
-        presidents[winIndex].eloScore = win + Int(K * (1 - winProbability))
-        presidents[loseIndex].eloScore = lose + Int(K * (0 - loseProbability))
-        let encoder = JSONEncoder()
-        if let encoded = try? encoder.encode(presidents) {
-            UserDefaults.standard.set(encoded, forKey: "presidentsArray")
-        }
-    }
-    
-    func sort () {
-        presidents.sort { $0.eloScore > $1.eloScore}
-    }
-    
-    func resetScores() {
-        for index in 0..<presidents.count {
-            presidents[index].eloScore = 1000
-        }
-    }
-
     
     var body: some View {
         ZStack {
@@ -162,11 +108,9 @@ struct ContentView: View {
                         Top5PresidentsView(presidents: presidents, showTopFive: $showTopFive, resetScores: resetScores)
                     })
                     
-                    
                 }
                 
                 Spacer()
-                
                 
                 Button(action: {
                     let winningScore = presidents[numTwo].eloScore
@@ -185,6 +129,61 @@ struct ContentView: View {
             }
             .padding(.all, 5.0)
         }
+        .onAppear {
+            loadPresidents()
+            sort()
+        }
+    }
+    
+    func randPres() {
+        if buttonMessage == "Start" {
+            loadPresidents()
+        }
+        buttonMessage = "Refresh"
+        numOne = Int.random(in:0..<presidents.count)
+        numTwo = Int.random(in:0..<presidents.count)
+        while numTwo == numOne {
+            numTwo = Int.random(in:0..<presidents.count)
+        }
+        presOne = presidents[numOne].name
+        presTwo = presidents[numTwo].name
+    }
+    
+    func ELO(win: Int, lose: Int, winIndex: Int, loseIndex: Int) {
+        let K: Double = 30
+        let winProbability = 1 / (1 + pow(10, Double(lose - win) / 400))
+        let loseProbability = 1 / (1 + pow(10, Double(win - lose) / 400))
+        presidents[winIndex].eloScore = win + Int(K * (1 - winProbability))
+        presidents[loseIndex].eloScore = lose + Int(K * (0 - loseProbability))
+        sort()
+    }
+    
+    func sort () {
+        presidents.sort { $0.eloScore > $1.eloScore }
+        savePresidents()
+    }
+    
+    func resetScores() {
+        for index in 0..<presidents.count {
+            presidents[index].eloScore = 1000
+        }
+        savePresidents()
+    }
+    
+    func savePresidents() {
+        let encoder = JSONEncoder()
+        if let encoded = try? encoder.encode(presidents) {
+            UserDefaults.standard.set(encoded, forKey: "presidentsArray")
+        }
+    }
+    
+    func loadPresidents() {
+        if let savedData = UserDefaults.standard.data(forKey: "presidentsArray") {
+            let decoder = JSONDecoder()
+            if let loadedPresidents = try? decoder.decode([President].self, from: savedData) {
+                presidents = loadedPresidents
+            }
+        }
     }
 }
 
@@ -201,7 +200,8 @@ struct Top5PresidentsView: View {
                     Text(String(president.eloScore))
                 }
             }
-        }        .padding()
+        }
+        .padding()
         Button(action: {
             showTopFive = false
         }) {
@@ -218,9 +218,6 @@ struct Top5PresidentsView: View {
     }
 }
 
-
-
 #Preview {
     ContentView()
 }
-
